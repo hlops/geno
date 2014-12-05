@@ -26,11 +26,28 @@ function setCouple(node, parentKey, child) {
     node.couples[parentKey] = child;
 }
 
+function parseDate(d) {
+    if (d) {
+        var s = d.split("-");
+        return new Date(parseInt(s[2]), parseInt(s[1]) - 1, parseInt(s[0]) + 1);
+    }
+    return null;
+}
+
+function getDate(d) {
+    return d ? d.toLocaleDateString() : "";
+}
+
 function init(data) {
     treeData = data;
     dataMap = data.reduce(function (map, node) {
         map[getId(node)] = node;
         node.couples = {};
+        node.birth = parseDate(node.birth);
+        node.death = parseDate(node.death);
+        var heightRange = getHeightRange(node);
+        minHeightRange = minHeightRange ? Math.min(minHeightRange, heightRange) : heightRange;
+        maxHeightRange = maxHeightRange ? Math.max(maxHeightRange, heightRange) : heightRange;
         return map;
     }, {});
     data.forEach(function (node) {
@@ -44,9 +61,19 @@ function init(data) {
     });
 }
 
+var width = 1500;
+var height = 800;
+var minHeightRange, maxHeightRange;
+
+function getHeight(d) {
+    return height * (getHeightRange(d) - minHeightRange) / (maxHeightRange - minHeightRange + 1) * .9+50;
+}
+
+function getHeightRange(d) {
+    return d.birth ? d.birth.getFullYear() : (minHeightRange + maxHeightRange) / 2;
+}
+
 function draw() {
-    var width = 1500;
-    var height = 600;
 
     var outer = d3.select("#canvas")
         .append("svg:svg")
@@ -74,22 +101,28 @@ function draw() {
 
     var node = outer.selectAll("circle").data(treeData).enter().append("g");
 
+    var intervals = new Interval();
+    var intervals1 = new Interval();
     node.append("circle")
-        .attr("cx", function (d, i) {
-            return i * 100;
+        .attr("cx", function (d) {
+            var h = getHeight(d);
+            return 50 + intervals.add(h - 10, h + 10) * 200;
         })
-        .attr("cy", function (d, i) {
-            return i * 40;
+        .attr("cy", function (d) {
+            return getHeight(d);
         })
         .attr("r", 5);
 
-    node.append("text").text(function (d, i) {
-        return d.name.split(" ")[1]
-    })
-        .attr("x", function (d, i) {
-            return i * 100 + 12;
+    node
+        .append("text").text(function (d, i) {
+            //return d.name.split(" ")[1]
+            return d.name.split(" ")[1] + " " + getDate(d.birth) + getHeightRange(d);
         })
-        .attr("y", function (d, i) {
-            return i * 40 + 4;
+        .attr("x", function (d) {
+            var h = getHeight(d);
+            return 50 + intervals1.add(h - 10, h + 10) * 200 + 8;
+        })
+        .attr("y", function (d) {
+            return getHeight(d) + 4;
         })
 }
