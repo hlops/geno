@@ -6,7 +6,9 @@ $(function () {
 });
 
 var dataMap = {};
-var treeData = [];
+var people = [];
+var couples = [], couplesMap = {};
+var children = [];
 
 function getId(node) {
     return node.id || node.name;
@@ -22,10 +24,6 @@ function getParentKey(node) {
     return (father || mother) ? getId(father) + "_" + getId(mother) : null;
 }
 
-function setCouple(node, parentKey, child) {
-    node.couples[parentKey] = child;
-}
-
 function parseDate(d) {
     if (d) {
         var s = d.split("-");
@@ -38,11 +36,17 @@ function getDate(d) {
     return d ? d.toLocaleDateString() : "";
 }
 
+function getNodeOrder(id) {
+    var node = getNode(id);
+    return node ? node.order : null;
+}
+
 function init(data) {
-    treeData = data;
     dataMap = data.reduce(function (map, node) {
-        map[getId(node)] = node;
-        node.couples = {};
+        var id = getId(node);
+        node.order = people.length;
+        people.push(node);
+        map[id] = node;
         node.birth = parseDate(node.birth);
         node.death = parseDate(node.death);
         var heightRange = getHeightRange(node);
@@ -52,12 +56,22 @@ function init(data) {
     }, {});
     data.forEach(function (node) {
         var parentKey = getParentKey(node);
-        if (node.mother) {
-            setCouple(getNode(node.mother), parentKey, node);
+        var couple = {
+            source: getNodeOrder(node.mother),
+            target: getNodeOrder(node.father)
+        };
+        if (couple.source == null) {
+            couple.source = couple.target;
         }
-        if (node.father) {
-            setCouple(getNode(node.father), parentKey, node);
+        if (couple.target == null) {
+            couple.target = couple.source;
         }
+        if (couple.target != null) {
+            couplesMap[parentKey] = couple;
+        }
+    });
+    d3.values(couplesMap).forEach(function (i) {
+        couples.push(i);
     });
 }
 
@@ -91,38 +105,43 @@ function draw() {
 
     var force = d3.layout.force()
         .size([width, height])
-        .nodes(treeData)
-        .links(treeData)
-        .linkDistance(50)
-        .charge(-200).start();
+        .nodes(people)
+        .links(couples)
+        .charge(-500)
+        .on("tick", tick)
+        .start();
 
-/*
-    var node = outer.selectAll("circle").data(people).enter().append("g");
+    var groups = outer.selectAll("circle").data(people).enter().append("g").append("svg");
+    var nodes = groups.append("circle").attr("r", 10).attr("cx", 10).attr("cy", 15);
 
-    var intervals = new Interval();
-    var intervals1 = new Interval();
-    node.append("circle")
-        .attr("cx", function (d) {
-            var h = getHeight(d);
-            return 50 + intervals.add(h - 10, h + 10) * 200;
-        })
-        .attr("cy", function (d) {
-            return getHeight(d);
-        })
-        .attr("r", 5);
+    var links = outer.selectAll("link").data(couples).enter().append("line").attr("class", "link");
 
-    node
-        .append("text").text(function (d, i) {
-            //return d.name.split(" ")[1]
-            return d.name.split(" ")[1] + " " + getDate(d.birth) + getHeightRange(d);
-        })
-        .attr("x", function (d) {
-            var h = getHeight(d);
-            return 50 + intervals1.add(h - 10, h + 10) * 200 + 8;
-        })
-        .attr("y", function (d) {
-            return getHeight(d) + 4;
-        });
+    groups.append("text").text(function (d) {
+        return d.name.split(" ")[1];
+    }).attr("x", 20).attr("y", 20);
 
-*/
+
+    function tick() {
+        links.attr("x1", function (d) {
+            return d.source.x + 10;
+        })
+            .attr("y1", function (d) {
+                return d.source.y + 15;
+            })
+            .attr("x2", function (d) {
+                return d.target.x + 10;
+            })
+            .attr("y2", function (d) {
+                return d.target.y + 15;
+            });
+
+        groups
+            .attr("x", function (d) {
+                return d.x;
+            })
+            .attr("y", function (d) {
+                return d.y;
+            })
+            .attr("w", 200).attr("h", 50)
+    }
 }

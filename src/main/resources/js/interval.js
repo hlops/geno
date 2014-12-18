@@ -23,6 +23,7 @@ var Interval = function () {
 };
 
 {
+/*
     var testInterval = new Interval();
     console.log("0=" + testInterval.add(0.4, 0.8));
     console.log("1=" + testInterval.add(0.5, 0.5));
@@ -32,4 +33,5 @@ var Interval = function () {
     console.log("1=" + testInterval.add(1, 1.1));
     console.log("2=" + testInterval.add(0.95, 1));
     console.log("3=" + testInterval.add(0, 1));
+*/
 }
