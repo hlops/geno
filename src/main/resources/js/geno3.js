@@ -68,11 +68,19 @@ function init(data) {
         }
         if (couple.target != null) {
             couplesMap[parentKey] = couple;
+            children.push({
+                source: couple.target,
+                target: getNodeOrder(getId(node))
+            });
         }
     });
     d3.values(couplesMap).forEach(function (i) {
         couples.push(i);
     });
+
+    children.forEach(function (i) {
+        console.log(i)
+    })
 }
 
 var width = 1500;
@@ -106,19 +114,20 @@ function draw() {
     var force = d3.layout.force()
         .size([width, height])
         .nodes(people)
-        .links(couples)
+        .links(couples.concat(children))
         .charge(-500)
         .on("tick", tick)
         .start();
 
     var groups = outer.selectAll("circle").data(people).enter().append("g").append("svg");
-    var nodes = groups.append("circle").attr("r", 10).attr("cx", 10).attr("cy", 15);
+    var nodes = groups.append("circle").attr("r", 10).attr("cx", 11).attr("cy", 15);
 
     var links = outer.selectAll("link").data(couples).enter().append("line").attr("class", "link");
+    var child_links = outer.selectAll("link").data(children).enter().append("line").attr("class", "link1");
 
     groups.append("text").text(function (d) {
         return d.name.split(" ")[1];
-    }).attr("x", 20).attr("y", 20);
+    }).attr("x", 22).attr("y", 19);
 
 
     function tick() {
@@ -142,6 +151,29 @@ function draw() {
             .attr("y", function (d) {
                 return d.y;
             })
-            .attr("w", 200).attr("h", 50)
+            .attr("w", 200).attr("h", 50);
+
+        child_links.attr("x1", function (d) {
+            return getChildCoord(d).x + 10;
+        })
+            .attr("y1", function (d) {
+                return getChildCoord(d).y + 15;
+            })
+            .attr("x2", function (d) {
+                return d.target.x + 10;
+            })
+            .attr("y2", function (d) {
+                return d.target.y + 15;
+            });
+
+    }
+
+    function getChildCoord(d) {
+        if (d.target.mother && d.target.father) {
+            return {
+                x: (getNode(d.target.mother).x + getNode(d.target.father).x) / 2,
+                y: (getNode(d.target.mother).y + getNode(d.target.father).y) / 2
+            }
+        } else return d.source;
     }
 }
