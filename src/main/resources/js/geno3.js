@@ -55,6 +55,7 @@ function init(data) {
         return map;
     }, {});
     data.forEach(function (node) {
+        node.yy = getHeight(node);
         var parentKey = getParentKey(node);
         var couple = {
             source: getNodeOrder(node.mother),
@@ -115,7 +116,8 @@ function draw() {
         .size([width, height])
         .nodes(people)
         .links(couples.concat(children))
-        .charge(-500)
+        .linkDistance(50)
+        .charge(-1000)
         .on("tick", tick)
         .start();
 
@@ -131,17 +133,18 @@ function draw() {
 
 
     function tick() {
-        links.attr("x1", function (d) {
-            return d.source.x + 10;
-        })
+        links
+            .attr("x1", function (d) {
+                return d.source.x + 10;
+            })
             .attr("y1", function (d) {
-                return d.source.y + 15;
+                return d.source.yy + 15;
             })
             .attr("x2", function (d) {
                 return d.target.x + 10;
             })
             .attr("y2", function (d) {
-                return d.target.y + 15;
+                return d.target.yy + 15;
             });
 
         groups
@@ -149,7 +152,7 @@ function draw() {
                 return d.x;
             })
             .attr("y", function (d) {
-                return d.y;
+                return d.yy;
             })
             .attr("w", 200).attr("h", 50);
 
@@ -157,13 +160,13 @@ function draw() {
             return getChildCoord(d).x + 10;
         })
             .attr("y1", function (d) {
-                return getChildCoord(d).y + 15;
+                return getChildCoord(d).yy + 15;
             })
             .attr("x2", function (d) {
                 return d.target.x + 10;
             })
             .attr("y2", function (d) {
-                return d.target.y + 15;
+                return d.target.yy + 15;
             });
 
     }
@@ -172,7 +175,7 @@ function draw() {
         if (d.target.mother && d.target.father) {
             return {
                 x: (getNode(d.target.mother).x + getNode(d.target.father).x) / 2,
-                y: (getNode(d.target.mother).y + getNode(d.target.father).y) / 2
+                yy: (getNode(d.target.mother).yy + getNode(d.target.father).yy) / 2
             }
         } else return d.source;
     }
